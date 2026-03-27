@@ -2,128 +2,138 @@ import math
 import numpy as np
 
 
+# -----------------------------
+# Bernoulli Log-Likelihood
+# -----------------------------
 def bernoulli_log_likelihood(data, theta):
-    """
-    Compute the Bernoulli log-likelihood for binary data.
+    data = np.array(data)
 
-    Parameters
-    ----------
-    data : array-like
-        Sequence of 0/1 observations.
-    theta : float
-        Bernoulli parameter, must satisfy 0 < theta < 1.
+    # Validation
+    if data.size == 0:
+        raise ValueError("Data cannot be empty")
 
-    Returns
-    -------
-    float
-        Log-likelihood:
-            sum_i [x_i log(theta) + (1-x_i) log(1-theta)]
+    if not (0 < theta < 1):
+        raise ValueError("Theta must be in (0,1)")
 
-    Requirements
-    ------------
-    - Raise ValueError if data is empty
-    - Raise ValueError if theta is not in (0,1)
-    - Raise ValueError if data contains values other than 0 and 1
-    """
-    raise NotImplementedError("Implement bernoulli_log_likelihood")
+    if not np.all((data == 0) | (data == 1)):
+        raise ValueError("Data must contain only 0 and 1")
+
+    # Compute log-likelihood
+    return np.sum(data * np.log(theta) + (1 - data) * np.log(1 - theta))
 
 
+# -----------------------------
+# Bernoulli MLE + Comparison
+# -----------------------------
 def bernoulli_mle_with_comparison(data, candidate_thetas=None):
-    """
-    Estimate the Bernoulli MLE and compare candidate theta values.
+    data = np.array(data)
 
-    Parameters
-    ----------
-    data : array-like
-        Sequence of 0/1 observations.
-    candidate_thetas : array-like or None
-        Optional candidate theta values to compare using log-likelihood.
-        If None, use [0.2, 0.5, 0.8].
+    # Validation
+    if data.size == 0:
+        raise ValueError("Data cannot be empty")
 
-    Returns
-    -------
-    dict
-        A dictionary with:
-        - 'mle': float
-            The Bernoulli MLE
-        - 'num_successes': int
-        - 'num_failures': int
-        - 'log_likelihoods': dict
-            Mapping candidate theta -> log-likelihood
-        - 'best_candidate': float
-            Candidate theta with highest log-likelihood
+    if not np.all((data == 0) | (data == 1)):
+        raise ValueError("Data must contain only 0 and 1")
 
-    Requirements
-    ------------
-    - Validate data
-    - Compute MLE analytically
-    - Compute candidate log-likelihoods using bernoulli_log_likelihood
-    - In case of ties in best candidate, return the first one encountered
-    """
-    raise NotImplementedError("Implement bernoulli_mle_with_comparison")
+    if candidate_thetas is None:
+        candidate_thetas = [0.2, 0.5, 0.8]
+
+    # Counts
+    num_successes = int(np.sum(data))
+    n = data.size
+    num_failures = n - num_successes
+
+    # MLE
+    mle = num_successes / n
+
+    # Compute log-likelihoods
+    log_likelihoods = {}
+    for theta in candidate_thetas:
+        log_likelihoods[theta] = bernoulli_log_likelihood(data, theta)
+
+    # Best candidate (first max)
+    best_candidate = None
+    best_value = -np.inf
+    for theta in candidate_thetas:
+        if log_likelihoods[theta] > best_value:
+            best_value = log_likelihoods[theta]
+            best_candidate = theta
+
+    return {
+        "mle": mle,
+        "num_successes": num_successes,
+        "num_failures": num_failures,
+        "log_likelihoods": log_likelihoods,
+        "best_candidate": best_candidate,
+    }
 
 
+# -----------------------------
+# Poisson Log-Likelihood
+# -----------------------------
 def poisson_log_likelihood(data, lam):
-    """
-    Compute the Poisson log-likelihood for count data.
+    data = np.array(data)
 
-    Parameters
-    ----------
-    data : array-like
-        Sequence of nonnegative integer counts.
-    lam : float
-        Poisson rate, must satisfy lam > 0.
+    # Validation
+    if data.size == 0:
+        raise ValueError("Data cannot be empty")
 
-    Returns
-    -------
-    float
-        Log-likelihood:
-            sum_i [x_i log(lam) - lam - log(x_i!)]
+    if lam <= 0:
+        raise ValueError("Lambda must be > 0")
 
-    Requirements
-    ------------
-    - Raise ValueError if data is empty
-    - Raise ValueError if lam <= 0
-    - Raise ValueError if data contains negative or non-integer values
+    # Check non-negative integers
+    if not np.all((data >= 0) & (data == np.floor(data))):
+        raise ValueError("Data must be non-negative integers")
 
-    Notes
-    -----
-    You may use math.lgamma(x + 1) for log(x!) since log(x!) = lgamma(x+1).
-    """
-    raise NotImplementedError("Implement poisson_log_likelihood")
+    # Compute log-likelihood
+    return np.sum([
+        x * np.log(lam) - lam - math.lgamma(x + 1)
+        for x in data
+    ])
 
 
+# -----------------------------
+# Poisson MLE + Analysis
+# -----------------------------
 def poisson_mle_analysis(data, candidate_lambdas=None):
-    """
-    Estimate the Poisson MLE and compare candidate lambda values.
+    data = np.array(data)
 
-    Parameters
-    ----------
-    data : array-like
-        Sequence of nonnegative integer counts.
-    candidate_lambdas : array-like or None
-        Optional candidate lambdas to compare using log-likelihood.
-        If None, use [1.0, 3.0, 5.0].
+    # Validation
+    if data.size == 0:
+        raise ValueError("Data cannot be empty")
 
-    Returns
-    -------
-    dict
-        A dictionary with:
-        - 'mle': float
-            The Poisson MLE
-        - 'sample_mean': float
-        - 'total_count': int
-        - 'n': int
-        - 'log_likelihoods': dict
-            Mapping candidate lambda -> log-likelihood
-        - 'best_candidate': float
-            Candidate lambda with highest log-likelihood
+    if not np.all((data >= 0) & (data == np.floor(data))):
+        raise ValueError("Data must be non-negative integers")
 
-    Requirements
-    ------------
-    - Validate data
-    - Compute MLE analytically
-    - Compute candidate log-likelihoods using poisson_log_likelihood
-    - In case of ties in best candidate, return the first one encountered
-    """
-    raise NotImplementedError("Implement poisson_mle_analysis")
+    if candidate_lambdas is None:
+        candidate_lambdas = [1.0, 3.0, 5.0]
+
+    # Stats
+    n = data.size
+    total_count = int(np.sum(data))
+    sample_mean = total_count / n
+
+    # MLE
+    mle = sample_mean
+
+    # Compute log-likelihoods
+    log_likelihoods = {}
+    for lam in candidate_lambdas:
+        log_likelihoods[lam] = poisson_log_likelihood(data, lam)
+
+    # Best candidate (first max)
+    best_candidate = None
+    best_value = -np.inf
+    for lam in candidate_lambdas:
+        if log_likelihoods[lam] > best_value:
+            best_value = log_likelihoods[lam]
+            best_candidate = lam
+
+    return {
+        "mle": mle,
+        "sample_mean": sample_mean,
+        "total_count": total_count,
+        "n": n,
+        "log_likelihoods": log_likelihoods,
+        "best_candidate": best_candidate,
+    }
